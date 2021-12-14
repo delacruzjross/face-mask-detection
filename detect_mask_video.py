@@ -119,15 +119,22 @@ while True:
 	for (box, pred) in zip(locs, preds):
 		# unpack the bounding box and predictions
 		(startX, startY, endX, endY) = box
-		(mask, withoutMask) = pred
+		(incorrectMask, withMask, withoutMask) = pred
 
 		# determine the class label and color we'll use to draw
 		# the bounding box and text
-		label = "Mask" if mask > withoutMask else "No Mask"
+		label = ""
+		if incorrectMask > withMask and incorrectMask > withoutMask:
+			label = "Incorrect Mask"
+		elif withMask > incorrectMask and withMask > withoutMask:
+			label = "With Mask"
+		else:
+			label = "Without Mask"
+
 		color = (0, 255, 0) if label == "Mask" else (0, 0, 255)
 			
 		# include the probability in the label
-		label = "{}: {:.2f}%".format(label, max(mask, withoutMask) * 100)
+		label = "{}: {:.2f}%".format(label, max(withMask, withoutMask) * 100)
 
 		# display the label and bounding box rectangle on the output
 		# frame

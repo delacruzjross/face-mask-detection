@@ -57,6 +57,7 @@ def mask_image():
 	# mask count
 	cMask = 0
 	cNoMask = 0
+	cIncMask = 0
 
 	# loop over the detections
 	for i in range(0, detections.shape[2]):
@@ -88,27 +89,28 @@ def mask_image():
 
 			# pass the face through the model to determine if the face
 			# has a mask or not
-			predictions = model.predict(face)
-			print(predictions)
-			classes = np.argmax(predictions, axis = 1)
-			print(classes)
-
-			(mask, withoutMask) = model.predict(face)[0]
+			(incorrectMask, withMask, withoutMask) = model.predict(face)[0]
 
 			# determine the class label and color we'll use to draw
 			# the bounding box and text
-			label = "Mask" if mask > withoutMask else "No Mask"
+			# label = "Mask" if mask > withoutMask else "No Mask"
 			id = "Person " + str(i + 1)
-			color = (0, 255, 0) if label == "Mask" else (0, 0, 255)
-
-			# count number of masks and no masks
-			if label == "Mask":
+			label = ""
+			if incorrectMask > withMask and incorrectMask > withoutMask:
+				label = "Incorrect Mask"
+				cIncMask += 1
+				color = (255,165,0)
+			elif withMask > incorrectMask and withMask > withoutMask:
+				label = "With Mask"
 				cMask += 1
+				color = (0,255,0)
 			else:
+				label = "Without Mask"
 				cNoMask += 1
+				color = (0,0,255)
 
 			# include the probability in the label
-			label = "{}: {:.2f}%".format(label, max(mask, withoutMask) * 100)
+			label = "{}: {:.2f}%".format(label, max(withMask, withoutMask) * 100)
 
 			# display the label and bounding box rectangle on the output
 			# frame
@@ -123,7 +125,8 @@ def mask_image():
 
 	strMask = "With mask: " + str(cMask) + "\n"
 	strNoMask = "Without mask: " + str(cNoMask) + "\n"
-	popUpMsg = strMask + strNoMask
+	strIncMask = "Incorrect mask: " + str(cIncMask) + "\n"
+	popUpMsg = strMask + strIncMask + strNoMask
 
 	# show the output image
 	cv2.imshow("Output", image)
