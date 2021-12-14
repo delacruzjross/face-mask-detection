@@ -9,6 +9,10 @@ import numpy as np
 import argparse
 import cv2
 import os
+import tkinter
+from tkinter import messagebox
+
+popUpMsg = ""
 def mask_image():
 	# construct the argument parser and parse the arguments
 	ap = argparse.ArgumentParser()
@@ -50,6 +54,10 @@ def mask_image():
 	net.setInput(blob)
 	detections = net.forward()
 
+	# mask count
+	cMask = 0
+	cNoMask = 0
+
 	# loop over the detections
 	for i in range(0, detections.shape[2]):
 		# extract the confidence (i.e., probability) associated with
@@ -85,25 +93,51 @@ def mask_image():
 			classes = np.argmax(predictions, axis = 1)
 			print(classes)
 
-			(incorrectMask, mask, withoutMask) = model.predict(face)[0]
+			(mask, withoutMask) = model.predict(face)[0]
 
 			# determine the class label and color we'll use to draw
 			# the bounding box and text
 			label = "Mask" if mask > withoutMask else "No Mask"
+			id = "Person " + str(i + 1)
 			color = (0, 255, 0) if label == "Mask" else (0, 0, 255)
+
+			# count number of masks and no masks
+			if label == "Mask":
+				cMask += 1
+			else:
+				cNoMask += 1
 
 			# include the probability in the label
 			label = "{}: {:.2f}%".format(label, max(mask, withoutMask) * 100)
 
 			# display the label and bounding box rectangle on the output
 			# frame
+			cv2.putText(image, id, (startX, startY - 25),
+				cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0,255,255), 2)
 			cv2.putText(image, label, (startX, startY - 10),
 				cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
 			cv2.rectangle(image, (startX, startY), (endX, endY), color, 2)
 
+	# mask counter popup message
+	global popUpMsg
+
+	strMask = "With mask: " + str(cMask) + "\n"
+	strNoMask = "Without mask: " + str(cNoMask) + "\n"
+	popUpMsg = strMask + strNoMask
+
 	# show the output image
 	cv2.imshow("Output", image)
-	cv2.waitKey(0)
+	cv2.waitKey(1000)
+
+def popup_alert():
+
+	# hide main tkinter window
+	root = tkinter.Tk()
+	root.withdraw()
+
+	# show popup alert
+	messagebox.showinfo("Mask Count", popUpMsg)
 	
 if __name__ == "__main__":
 	mask_image()
+	popup_alert()
